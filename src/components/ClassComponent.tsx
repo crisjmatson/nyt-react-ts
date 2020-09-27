@@ -9,18 +9,21 @@ import {
 	PaginationItem,
 	PaginationLink,
 } from "reactstrap";
+import { Results } from "./NYTInterfaces";
 const APIKEY = "&api-key=UQesaw4sGhG9epGh9O6KX2dPnw7P6sUK";
 const BASE: string = "https://api.nytimes.com/svc/search/v2/articlesearch.json";
+
 export interface ClassProps {
-	setResults: any;
-	results: any;
+	setResults: React.Dispatch<React.SetStateAction<Results>>;
+	results: Results;
 }
-type ClassState = {
+export interface ClassState {
 	term: string;
 	start: string;
 	end: string;
 	pageCount: number;
-};
+	firstSearch: boolean;
+}
 
 export default class ClassComponent extends Component<ClassProps, ClassState> {
 	constructor(props: ClassProps) {
@@ -29,24 +32,24 @@ export default class ClassComponent extends Component<ClassProps, ClassState> {
 			term: "search",
 			start: "",
 			end: "",
-			pageCount: 0,
+			pageCount: 1,
+			firstSearch: false,
 		};
 	}
 
-	formSubmitted(event: any): void {
+	formSubmitted(event: React.FormEvent<HTMLFormElement>): void {
 		event.preventDefault();
-		this.buildURL();
+		this.pageChange(0);
 	}
 
 	pageChange(pageChange: number): void {
 		let oldPage = this.state.pageCount;
 		let newPage = pageChange + oldPage;
-		console.log(newPage);
 		this.setState({ pageCount: newPage });
 		this.buildURL();
 	}
 
-	buildURL(): void {
+	buildURL(page?: number): void {
 		let query = "";
 		let startDate = "";
 		let endDate = "";
@@ -61,33 +64,33 @@ export default class ClassComponent extends Component<ClassProps, ClassState> {
 			let consolidate = this.state.start.split("-").join("");
 			startDate = `&begin_date=${consolidate}`;
 			fetchUrl += startDate;
-			console.log(fetchUrl);
 		}
 		if (this.state.end !== "") {
 			let consolidate = this.state.start.split("-").join("");
 			endDate = `&end_date=${consolidate}`;
 			fetchUrl += endDate;
-			console.log(fetchUrl);
 		}
-		fetchUrl += `&page=${this.state.pageCount}`;
+		page === undefined
+			? (fetchUrl += `&page=${this.state.pageCount}`)
+			: (fetchUrl += `&page=${page}`);
 		fetchUrl += APIKEY;
-		console.log(fetchUrl);
 		this.handleSubmit(fetchUrl);
 	}
 
 	async handleSubmit(fetchUrl: string) {
 		let result = await fetch(fetchUrl);
 		let json = await result.json();
-		json
-			? //console.log(json.response.docs)
-			  this.props.setResults(json.response.docs)
-			: console.log("Fetch Failed.");
+		json ? this.props.setResults(json.response) : console.log("Fetch Failed.");
 	}
 
 	render() {
 		return (
 			<div>
-				<Form onSubmit={(event) => this.formSubmitted(event)}>
+				<Form
+					onSubmit={(event: React.FormEvent<HTMLFormElement>) =>
+						this.formSubmitted(event)
+					}
+				>
 					<FormGroup>
 						<Label for="searchTerm">enter search term: </Label>
 						<Input
@@ -95,7 +98,9 @@ export default class ClassComponent extends Component<ClassProps, ClassState> {
 							name="searchTerm"
 							id="searchTerm"
 							placeholder="'cats, dogs, and the forces that control them'"
-							onChange={(e) => this.setState({ term: e.target.value })}
+							onChange={(e) =>
+								this.setState({ term: e.target.value, pageCount: 0 })
+							}
 							required
 						/>
 					</FormGroup>
@@ -117,33 +122,44 @@ export default class ClassComponent extends Component<ClassProps, ClassState> {
 							onChange={(e) => this.setState({ end: e.target.value })}
 						/>
 					</FormGroup>
-					<Button type="submit">\ s e a r c h \</Button>
+					<Button type="submit"> s e a r c h </Button>
 				</Form>
-				{this.props.results.length === 10 ? (
-					<div className="paginationArrows">
-						<Pagination
-							size="lg"
-							aria-label="Page navigation back"
-							className="float-left"
-						>
-							<PaginationItem>
-								<PaginationLink previous onClick={() => this.pageChange(-1)} />
-								{/*  // back 1 */}
-							</PaginationItem>
-						</Pagination>
-						<Pagination
-							size="lg"
-							aria-label="Page navigation forward"
-							className="float-right"
-						>
-							<PaginationItem>
-								<PaginationLink next onClick={() => this.pageChange(1)} />
-								{/*  // forward 1 */}
-							</PaginationItem>
-						</Pagination>
-					</div>
+				{this.props.results === undefined ? (
+					<span></span>
 				) : (
-					<span>no page</span>
+					<div className="paginationArrows">
+						{this.state.pageCount > 1 ? (
+							<Pagination
+								size="lg"
+								aria-label="Page navigation back"
+								className="float-left"
+							>
+								<PaginationItem>
+									<PaginationLink
+										previous
+										onClick={() => this.pageChange(-1)}
+									/>
+									{/*  // back 1 */}
+								</PaginationItem>
+							</Pagination>
+						) : (
+							<span></span>
+						)}
+						{this.props.results.docs.length <= 10 ? (
+							<Pagination
+								size="lg"
+								aria-label="Page navigation forward"
+								className="float-right"
+							>
+								<PaginationItem>
+									<PaginationLink next onClick={() => this.pageChange(1)} />
+									{/*  // forward 1 */}
+								</PaginationItem>
+							</Pagination>
+						) : (
+							<span></span>
+						)}
+					</div>
 				)}
 			</div>
 		);

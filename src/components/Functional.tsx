@@ -7,32 +7,49 @@ import {
 	ListGroupItemText,
 	Badge,
 } from "reactstrap";
+import { Article, ArticleKeyword, Results } from "./NYTInterfaces";
 import "../components/functionalcss.css";
 
-export const Functional = () => {
-	const [results, setResults] = useState([]);
+export const Functional: React.FunctionComponent = () => {
+	const [results, setResults] = useState<Results>({
+		docs: [],
+		meta: {
+			hits: 0,
+			offset: 0,
+			time: 0,
+		},
+	});
 
 	return (
-		<div>
+		<div className="FunctionalMain">
 			<ClassComponent setResults={setResults} results={results} />
 			<br />
-			<ListGroup>
-				<ListGroupItem active>
-					<ListGroupItemHeading>search results : </ListGroupItemHeading>
-				</ListGroupItem>
-
-				{results.length > 0 ? (
-					results.map((article: any) => {
-						//let num: number = results.indexOf(article);
+			{results === undefined || results.docs.length === 0 ? (
+				<span>
+					<br />
+					<br />
+					<br />
+					<br />
+				</span>
+			) : (
+				<ListGroup>
+					<ListGroupItem active>
+						<ListGroupItemHeading>search results : </ListGroupItemHeading>
+					</ListGroupItem>
+					{results.docs.map((article: Article) => {
 						return (
-							<ListGroupItem key={article.multimedia.length}>
+							<ListGroupItem
+								key={article.web_url + article._id + article.pub_date}
+							>
 								<ListGroupItemHeading>
 									<a href={article.web_url} target="_blank">
 										{article.headline.main}
 									</a>
 								</ListGroupItemHeading>
 								<br />
-								{article.multimedia[0] !== undefined ? (
+								{article.multimedia[0] === undefined ? (
+									<span></span>
+								) : (
 									<span>
 										<img
 											src={
@@ -40,13 +57,11 @@ export const Functional = () => {
 												article.multimedia[0].url +
 												""
 											}
-											width="90%"
+											height="90%"
 										/>
 										<br />
 										<br />
 									</span>
-								) : (
-									<span></span>
 								)}
 
 								<ListGroupItemText>
@@ -58,7 +73,7 @@ export const Functional = () => {
 											none
 										</Badge>
 									) : (
-										article.keywords.map(function (keyword: any) {
+										article.keywords.map(function (keyword: ArticleKeyword) {
 											return (
 												<Badge pill className="articleTags">
 													{keyword.value}
@@ -69,17 +84,10 @@ export const Functional = () => {
 								</ListGroupItemText>
 							</ListGroupItem>
 						);
-					})
-				) : (
-					<ListGroupItem>
-						<br />
-						<br />
-						<p>...</p>
-						<br />
-						<br />
-					</ListGroupItem>
-				)}
-			</ListGroup>
+					})}
+				</ListGroup>
+			)}
+
 			<br />
 			{/* PAGINATE HERE */}
 		</div>
